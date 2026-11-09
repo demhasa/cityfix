@@ -43,3 +43,5 @@ CityFix_MASTER_PROMPT.md
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+.vercel

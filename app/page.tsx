@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Bell,
   Camera,
@@ -83,5 +83,93 @@ function IncidentCard({ incident }: { incident: Incident }) {
 function MapView() { return <div className="empty-view"><div className="map-preview"><div className="map-grid" /><span className="map-pin pin-one"><MapPin /></span><span className="map-pin pin-two"><MapPin /></span><span className="map-pin pin-three"><MapPin /></span><div className="map-label">Probleme në afërsi</div></div><h2>Harta e qytetit</h2><p>Shiko problemet e raportuara rreth teje.</p></div>; }
 function ReportsView() { return <div className="screen-view"><p className="eyebrow">Aktiviteti yt</p><h1>Raportet e mia</h1><div className="stats-row"><div><strong>3</strong><span>Raporte</span></div><div><strong>2</strong><span>Të zgjidhura</span></div><div><strong>18</strong><span>Mbështetje</span></div></div>{incidents.slice(0, 2).map((incident) => <IncidentCard key={incident.id} incident={incident} />)}</div>; }
 function ProfileView() { return <div className="screen-view profile-view"><div className="profile-avatar">A</div><h1>Agim Demhasaj</h1><p>Qytetar · Prishtinë</p><div className="profile-menu"><button><Bell /> Njoftimet <ChevronRight /></button><button><ShieldCheck /> Privatësia dhe siguria <ChevronRight /></button><button><CircleUserRound /> Llogaria ime <ChevronRight /></button></div></div>; }
-function ReportView({ onClose }: { onClose: () => void }) { return <div className="camera-view"><div className="camera-frame"><div className="camera-hint"><Sparkles size={18} /> Fotografia analizohet nga AI</div><div className="camera-crosshair" /></div><h2>Raporto një problem</h2><p>Fotografo problemin qartë për analizë më të saktë.</p><button className="primary-button" onClick={onClose}>Zgjidh fotografinë</button></div>; }
+function ReportView({ onClose }: { onClose: () => void }) {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const [photo, setPhoto] = useState<string | null>(null);
+  const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [cameraMessage, setCameraMessage] = useState("Duke kërkuar qasje në kamerë...");
+  const [locationMessage, setLocationMessage] = useState("Lokacioni nuk është marrë ende.");
+  const [submitted, setSubmitted] = useState(false);
+
+  useEffect(() => {
+    let activeStream: MediaStream | null = null;
+    const requestCamera = async () => {
+      if (!navigator.mediaDevices?.getUserMedia) {
+        setCameraMessage("Kamera nuk mbështetet. Përdor ngarkimin e fotografisë.");
+        return;
+      }
+      try {
+        activeStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: "environment" } }, audio: false });
+        streamRef.current = activeStream;
+        if (videoRef.current) {
+          videoRef.current.srcObject = activeStream;
+          await videoRef.current.play();
+        }
+        setCameraMessage("Kamera është gati.");
+      } catch {
+        setCameraMessage("Qasja në kamerë u refuzua. Mund të përdorësh galerinë.");
+      }
+    };
+    void requestCamera();
+    return () => {
+      activeStream?.getTracks().forEach((track) => track.stop());
+      streamRef.current?.getTracks().forEach((track) => track.stop());
+    };
+  }, []);
+
+  const requestLocation = () => {
+    if (!navigator.geolocation) {
+      setLocationMessage("Ky shfletues nuk mbështet lokacionin.");
+      return;
+    }
+    setLocationMessage("Duke kërkuar lokacionin...");
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const nextLocation = { lat: Number(position.coords.latitude.toFixed(6)), lng: Number(position.coords.longitude.toFixed(6)) };
+        setLocation(nextLocation);
+        setLocationMessage("Lokacioni u gjet.");
+      },
+      () => setLocationMessage("Lokacioni u refuzua. Mund ta aktivizosh nga cilësimet e shfletuesit."),
+      { enableHighAccuracy: true, timeout: 10000 },
+    );
+  };
+
+  const capturePhoto = () => {
+    const video = videoRef.current;
+    if (!video || video.readyState < 2) return;
+    const canvas = document.createElement("canvas");
+    const scale = Math.min(1, 1280 / video.videoWidth);
+    canvas.width = Math.round(video.videoWidth * scale);
+    canvas.height = Math.round(video.videoHeight * scale);
+    canvas.getContext("2d")?.drawImage(video, 0, 0, canvas.width, canvas.height);
+    setPhoto(canvas.toDataURL("image/jpeg", 0.8));
+    requestLocation();
+  };
+
+  const submitReport = async () => {
+    if (!photo || !location) return;
+    const response = await fetch("/api/reports", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title: "Raport nga kamera", description: "Raport i ri nga qytetari.", category: "other", lat: location.lat, lng: location.lng, imageUrl: photo }),
+    });
+    if (response.ok) setSubmitted(true);
+  };
+
+  if (submitted) return <div className="camera-view success-view"><div className="success-icon"><ShieldCheck size={34} /></div><h2>Raporti u pranua</h2><p>Komuna do ta shqyrtojë problemin në lokacionin e shënuar.</p><button className="primary-button" onClick={onClose}>Kthehu në kryefaqe</button></div>;
+  return <div className="camera-view">
+    <div className={`camera-frame ${photo ? "has-photo" : ""}`}>
+      {photo ? <img src={photo} alt="Fotografia e problemit" /> : <video ref={videoRef} className="camera-video" playsInline muted aria-label="Pamja e kamerës" />}
+      {!photo && <><div className="camera-hint"><Sparkles size={18} /> {cameraMessage}</div><div className="camera-crosshair" /></>}
+    </div>
+    <div className="camera-actions">
+      {!photo ? <><button className="shutter-button" aria-label="Bëj fotografi" onClick={capturePhoto}><Camera size={24} /></button><label className="gallery-button"><Plus size={20} /><input type="file" accept="image/*" capture="environment" onChange={(event) => { const file = event.target.files?.[0]; if (file) { setPhoto(URL.createObjectURL(file)); requestLocation(); } }} /></label></> : <button className="retake-button" onClick={() => setPhoto(null)}>Bëj përsëri</button>}
+    </div>
+    <h2>Raporto një problem</h2><p>Fotografo problemin qartë për analizë më të saktë.</p>
+    <button className={`location-button ${location ? "ready" : ""}`} onClick={requestLocation}><MapPin size={17} /> {location ? `${location.lat}, ${location.lng}` : "Lejo lokacionin në hartë"}</button>
+    <small className="permission-message">{locationMessage}</small>
+    {photo && <button className="primary-button submit-report" disabled={!location} onClick={submitReport}>Konfirmo dhe dërgo raportin</button>}
+  </div>;
+}
 function ReportSheet({ onClose, onContinue }: { onClose: () => void; onContinue: () => void }) { return <div className="sheet-backdrop" onClick={onClose}><div className="report-sheet" onClick={(event) => event.stopPropagation()}><div className="sheet-handle" /><p className="eyebrow">Hapi 1 nga 3</p><h2>Çfarë dëshiron të raportosh?</h2><p className="sheet-copy">Bëj një fotografi. CityFix do ta analizojë dhe do të plotësojë raportin për ty.</p><div className="upload-options"><button onClick={onContinue}><Camera /><span><strong>Hap kamerën</strong><small>Fotografo problemin tani</small></span><ChevronRight /></button><button onClick={onContinue}><Plus /><span><strong>Zgjidh nga galeria</strong><small>Ngarko një fotografi ekzistuese</small></span><ChevronRight /></button></div><button className="cancel-button" onClick={onClose}>Anulo</button></div></div>; }
