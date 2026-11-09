@@ -27,12 +27,6 @@ type Incident = {
   time: string;
 };
 
-const incidents: Incident[] = [
-  { id: "CF-1042", title: "Gropë e madhe në rrugë", category: "Gropë", status: "Në pritje", priority: "urgent", area: "Bregu i Diellit", reports: 14, time: "12 min më parë" },
-  { id: "CF-1041", title: "Ndriçimi publik nuk punon", category: "Ndriçim", status: "Në proces", priority: "high", area: "Ulpianë", reports: 6, time: "1 orë më parë" },
-  { id: "CF-1038", title: "Mbeturina pranë parkut", category: "Mbeturina", status: "Pranuar", priority: "normal", area: "Dardani", reports: 9, time: "3 orë më parë" },
-];
-
 const navItems = [
   { label: "Kryefaqja", icon: HomeIcon },
   { label: "Harta", icon: MapPin },
@@ -44,6 +38,11 @@ const navItems = [
 export default function Home() {
   const [active, setActive] = useState("Kryefaqja");
   const [showReport, setShowReport] = useState(false);
+  const [incidents, setIncidents] = useState<Incident[]>([]);
+
+  useEffect(() => {
+    void fetch("/api/incidents").then((response) => response.ok ? response.json() as Promise<{ incidents: Incident[] }> : Promise.reject(new Error("incident load failed"))).then((data) => setIncidents(data.incidents)).catch(() => setIncidents([]));
+  }, []);
 
   return (
     <main className="cityfix-app">
@@ -58,11 +57,11 @@ export default function Home() {
             <div className="greeting"><div><p className="eyebrow">E martë, 9 nëntor</p><h1>Çfarë po ndodh<br /><em>në lagjen tënde?</em></h1></div><div className="avatar">A</div></div>
             <button className="report-cta" onClick={() => setShowReport(true)}><span className="camera-circle"><Camera size={24} /></span><span><strong>Raporto një problem</strong><small>Ndihmo qytetin të bëhet më i mirë</small></span><ChevronRight size={21} /></button>
             <div className="section-heading"><div><p className="eyebrow">Në afërsi</p><h2>Problemet e fundit</h2></div><button className="link-button">Shiko të gjitha <ChevronRight size={16} /></button></div>
-            <div className="incident-list">{incidents.map((incident) => <IncidentCard key={incident.id} incident={incident} />)}</div>
+            <div className="incident-list">{incidents.length ? incidents.map((incident) => <IncidentCard key={incident.id} incident={incident} />) : <p className="empty-copy">Duke ngarkuar incidentet reale...</p>}</div>
             <div className="community-card"><div className="community-icon"><Sparkles size={20} /></div><div><strong>Së bashku bëjmë ndryshimin</strong><p>Ke parë një problem që dikush tjetër e ka raportuar? Konfirmoje.</p></div><ChevronRight size={18} /></div>
           </>
         )}
-        {active === "Harta" && <MapView />}
+        {active === "Harta" && <MapView incidents={incidents} />}
         {active === "Raportet" && <ReportsView />}
         {active === "Profili" && <ProfileView />}
         {active === "Raporto" && <ReportView onClose={() => setActive("Kryefaqja")} />}
@@ -80,8 +79,8 @@ function IncidentCard({ incident }: { incident: Incident }) {
   return <article className="incident-card"><div className={`incident-photo photo-${incident.priority}`}><MapPin size={22} /><span>{incident.area}</span></div><div className="incident-info"><div className="card-meta"><span className={`priority-dot ${incident.priority}`} />{incident.category}<time>{incident.time}</time></div><h3>{incident.title}</h3><div className="card-footer"><span className={`status ${incident.status === "Në proces" ? "progress" : ""}`}>{incident.status}</span><button aria-label="Konfirmo raportin"><ThumbsUp size={15} /> {incident.reports}</button></div></div></article>;
 }
 
-function MapView() { return <div className="empty-view"><div className="map-preview"><div className="map-grid" /><span className="map-pin pin-one"><MapPin /></span><span className="map-pin pin-two"><MapPin /></span><span className="map-pin pin-three"><MapPin /></span><div className="map-label">Probleme në afërsi</div></div><h2>Harta e qytetit</h2><p>Shiko problemet e raportuara rreth teje.</p></div>; }
-function ReportsView() { return <div className="screen-view"><p className="eyebrow">Aktiviteti yt</p><h1>Raportet e mia</h1><div className="stats-row"><div><strong>3</strong><span>Raporte</span></div><div><strong>2</strong><span>Të zgjidhura</span></div><div><strong>18</strong><span>Mbështetje</span></div></div>{incidents.slice(0, 2).map((incident) => <IncidentCard key={incident.id} incident={incident} />)}</div>; }
+function MapView({ incidents }: { incidents: Incident[] }) { return <div className="empty-view"><div className="map-preview"><div className="map-grid" />{incidents.slice(0, 6).map((incident, index) => <span className={`map-pin pin-${(index % 3) + 1}`} key={incident.id} title={incident.title}><MapPin /></span>)}<div className="map-label">{incidents.length} probleme në databazë</div></div><h2>Harta e qytetit</h2><p>Shiko problemet e raportuara rreth teje.</p></div>; }
+function ReportsView() { return <div className="screen-view"><p className="eyebrow">Aktiviteti yt</p><h1>Raportet e mia</h1><div className="stats-row"><div><strong>0</strong><span>Raporte</span></div><div><strong>0</strong><span>Të zgjidhura</span></div><div><strong>0</strong><span>Mbështetje</span></div></div><p className="empty-copy">Raportet e tua do të shfaqen këtu pas dërgimit.</p></div>; }
 function ProfileView() { return <div className="screen-view profile-view"><div className="profile-avatar">A</div><h1>Agim Demhasaj</h1><p>Qytetar · Prishtinë</p><div className="profile-menu"><button><Bell /> Njoftimet <ChevronRight /></button><button><ShieldCheck /> Privatësia dhe siguria <ChevronRight /></button><button><CircleUserRound /> Llogaria ime <ChevronRight /></button></div></div>; }
 function ReportView({ onClose }: { onClose: () => void }) {
   const videoRef = useRef<HTMLVideoElement>(null);

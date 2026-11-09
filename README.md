@@ -21,7 +21,7 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000) or [http://localhost:3000/admin](http://localhost:3000/admin).
 
-Copy `.env.example` to `.env.local` for services. `DATABASE_URL` and `GEMINI_API_KEY` are optional for the local UI; reports use the fallback AI response without a key.
+Copy `.env.example` to `.env.local` for services. `DATABASE_URL` is required for database-backed incidents. `GEMINI_API_KEY` enables real Gemini image analysis; reports remain submittable with an explicit fallback status when it is absent.
 
 ## Validation
 

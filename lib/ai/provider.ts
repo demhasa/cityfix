@@ -13,9 +13,13 @@ export function getAiProvider(): AiProvider {
     const key = process.env.GEMINI_API_KEY;
     if (!key) return fallback;
     try {
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${encodeURIComponent(key)}`, {
+      const model = process.env.GEMINI_MODEL ?? "gemini-2.5-flash";
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(key)}`, {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ contents: [{ parts: [{ text: `Return only JSON matching the CityFix issue schema. Language: Albanian. Context: ${context ?? "none"}` }, { inline_data: { mime_type: "image/jpeg", data: image.replace(/^data:image\/\w+;base64,/, "") } }] }] }),
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: `Analyze this municipal problem image. Return only JSON matching the CityFix issue schema. Language: Albanian. Context: ${context ?? "none"}` }, { inline_data: { mime_type: "image/jpeg", data: image.replace(/^data:image\/\w+;base64,/, "") } }] }],
+          generationConfig: { responseMimeType: "application/json" },
+        }),
       });
       if (!response.ok) return fallback;
       const payload = await response.json() as { candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }> };

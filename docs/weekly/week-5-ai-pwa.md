@@ -8,6 +8,7 @@
 - Added report flow screens, an AI analysis hint, install manifest and a cached offline shell.
 - Added a real camera permission request using `getUserMedia`, a rear-camera preference, gallery fallback and compressed JPEG capture.
 - Added a real geolocation permission request, visible latitude/longitude confirmation and a submit button gated on location.
+- The production AI call is enabled by setting `GEMINI_API_KEY` (and optionally `GEMINI_MODEL`) in Vercel; without it, the API explicitly stores `ai_status: "failed"` instead of inventing an analysis.
 - Added visible status and map affordances for the interim demo.
 
 ## Test demo
