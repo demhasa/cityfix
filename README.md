@@ -31,6 +31,4 @@ npm test
 npm run build
 ```
 
-## Deployment
 
-Deploy to Vercel after authenticating the Vercel CLI and setting production environment variables. GitHub remote creation/push requires an authenticated `gh` CLI.
