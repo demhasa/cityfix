@@ -30,5 +30,4 @@ npm run lint
 npm test
 npm run build
 ```
-
-
+The production deployment is available at [cityfix-phi.vercel.app](https://cityfix-phi.vercel.app). The GitHub repository is connected to Vercel for future deployments. Production secrets are configured in Vercel, while local secrets remain in ignored `.env.local`.
