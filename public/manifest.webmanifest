@@ -1,0 +1,11 @@
+{
+  "name": "CityFix",
+  "short_name": "CityFix",
+  "description": "Raporto problemet e qytetit.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f6f8f5",
+  "theme_color": "#18543d",
+  "lang": "sq",
+  "icons": []
+}
