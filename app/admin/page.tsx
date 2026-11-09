@@ -1,0 +1,12 @@
+import { AlertTriangle, BarChart3, CheckCircle2, Clock3, Map, ShieldCheck } from "lucide-react";
+import "./admin.css";
+
+const rows = [
+  ["CF-1042", "Gropë e madhe në rrugë", "Bregu i Diellit", "Urgjente", "Në pritje"],
+  ["CF-1041", "Ndriçimi publik nuk punon", "Ulpianë", "E lartë", "Në proces"],
+  ["CF-1038", "Mbeturina pranë parkut", "Dardani", "Normale", "Pranuar"],
+];
+export default function AdminPage() {
+  return <main className="admin-shell"><aside><div className="admin-brand"><ShieldCheck /> CityFix</div><p className="admin-caption">PANELI I KOMUNËS</p>{["Dashboard", "Incidentet", "Ekipet", "Harta", "Raportet"].map((item, index) => <button className={index === 0 ? "selected" : ""} key={item}>{index === 0 ? <BarChart3 /> : index === 3 ? <Map /> : <CheckCircle2 />}{item}</button>)}</aside><section className="admin-main"><header><div><p className="admin-caption">E martë, 9 nëntor 2026</p><h1>Dashboard</h1></div><div className="admin-user"><span>Komuna e Prishtinës</span><strong>AD</strong></div></header><div className="kpis"><Kpi icon={<AlertTriangle />} label="Të hapura" value="42" tone="red" /><Kpi icon={<Clock3 />} label="Në proces" value="18" tone="orange" /><Kpi icon={<CheckCircle2 />} label="Zgjidhur sot" value="12" tone="green" /><Kpi icon={<BarChart3 />} label="Koha mesatare" value="3.2d" tone="blue" /></div><div className="admin-grid"><section className="admin-card wide"><div className="admin-card-head"><div><p className="admin-caption">MENAXHIMI</p><h2>Incidentet më urgjente</h2></div><button className="admin-outline">Eksporto CSV</button></div><div className="table-wrap"><table><thead><tr><th>ID</th><th>Problemi</th><th>Zona</th><th>Prioriteti</th><th>Statusi</th></tr></thead><tbody>{rows.map((row) => <tr key={row[0]}>{row.map((cell, index) => <td className={index === 3 ? "priority-cell" : ""} key={cell}>{cell}</td>)}</tr>)}</tbody></table></div></section><section className="admin-card chart-card"><p className="admin-caption">7 DITËT E FUNDIT</p><h2>Raportet e reja</h2><div className="bars">{[38,55,42,76,59,88,68].map((height, index) => <div key={index}><span style={{ height: `${height}%` }} /><small>{["H","M","M","E","P","S","D"][index]}</small></div>)}</div></section></div></section></main>;
+}
+function Kpi({ icon, label, value, tone }: { icon: React.ReactNode; label: string; value: string; tone: string }) { return <div className="kpi"><span className={`kpi-icon ${tone}`}>{icon}</span><div><small>{label}</small><strong>{value}</strong></div></div>; }
