@@ -6,6 +6,8 @@
 - Added a fallback result when the API key is missing or Gemini fails, so a citizen can still submit a report.
 - Added Albanian AI output validation with a strict Zod schema.
 - Added report flow screens, an AI analysis hint, install manifest and a cached offline shell.
+- Added a real camera permission request using `getUserMedia`, a rear-camera preference, gallery fallback and compressed JPEG capture.
+- Added a real geolocation permission request, visible latitude/longitude confirmation and a submit button gated on location.
 - Added visible status and map affordances for the interim demo.
 
 ## Test demo
