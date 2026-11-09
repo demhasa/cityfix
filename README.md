@@ -1,36 +1,36 @@
 # CityFix
 
-CityFix is a municipal issue reporting platform for the Prishtina and Deçan pilot municipalities.
+CityFix is a mobile-first municipal issue reporting platform for the Prishtina and Deçan pilot municipalities. Citizens submit a photo and location; AI proposes an Albanian report, while municipal teams triage incidents by transparent priority score.
+
+## Features in this build
+
+- Albanian citizen PWA shell with bottom navigation, report flow, map preview, reports, profile, offline service worker and install manifest.
+- Responsive `/admin` dashboard with KPI cards, urgent incidents, chart and municipality scope.
+- Drizzle/Postgres schema for municipalities, users, incidents, reports, status history, notifications and sensitive places.
+- Zod-validated report API and provider abstraction with Gemini vision integration plus a safe fallback when no key is configured.
+- Unit tests for duplicate detection, priority scoring and AI output validation.
 
 ## Local development
 
-Requirements:
-
-- Node.js 20.9 or newer
-- npm
-
-Install dependencies and start the development server:
+Requires Node.js 20.9+ and npm.
 
 ```bash
 npm install
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
+Open [http://localhost:3000](http://localhost:3000) or [http://localhost:3000/admin](http://localhost:3000/admin).
 
-Copy `.env.example` to `.env.local` when backend services are configured. Never commit `.env.local` or production credentials.
-
-## Project structure
-
-- `app/` — Next.js App Router pages and API routes
-- `components/` — shared UI components
-- `db/` — database schema, migrations, and seed data
-- `lib/` — shared application services
-- `docs/` — system design and project documentation
+Copy `.env.example` to `.env.local` for services. `DATABASE_URL` and `GEMINI_API_KEY` are optional for the local UI; reports use the fallback AI response without a key.
 
 ## Validation
 
 ```bash
 npm run lint
+npm test
 npm run build
 ```
+
+## Deployment
+
+Deploy to Vercel after authenticating the Vercel CLI and setting production environment variables. GitHub remote creation/push requires an authenticated `gh` CLI.
