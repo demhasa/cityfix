@@ -26,6 +26,7 @@ type Incident = {
   reports: number;
   time: string;
 };
+type AiPreview = { title: string; description: string; category: string; danger_level: number; suggested_priority: string };
 
 const navItems = [
   { label: "Kryefaqja", icon: HomeIcon },
@@ -89,6 +90,8 @@ function ReportView({ onClose }: { onClose: () => void }) {
   const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [cameraMessage, setCameraMessage] = useState("Duke kërkuar qasje në kamerë...");
   const [locationMessage, setLocationMessage] = useState("Lokacioni nuk është marrë ende.");
+  const [analysis, setAnalysis] = useState<AiPreview | null>(null);
+  const [analysisMessage, setAnalysisMessage] = useState("");
   const [submitted, setSubmitted] = useState(false);
 
   useEffect(() => {
@@ -147,13 +150,30 @@ function ReportView({ onClose }: { onClose: () => void }) {
   };
 
   const submitReport = async () => {
-    if (!photo || !location) return;
+    if (!photo || !location || !analysis) return;
     const response = await fetch("/api/reports", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title: "Raport nga kamera", description: "Raport i ri nga qytetari.", category: "other", lat: location.lat, lng: location.lng, imageUrl: photo }),
+      body: JSON.stringify({ title: analysis.title, description: analysis.description, category: analysis.category, lat: location.lat, lng: location.lng, imageUrl: photo }),
     });
     if (response.ok) setSubmitted(true);
+  };
+
+  const analyzeReport = async () => {
+    if (!photo || !location) return;
+    setAnalysisMessage("AI po e analizon fotografinë...");
+    const response = await fetch("/api/reports/analyze", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ imageUrl: photo, category: "other" }),
+    });
+    if (!response.ok) {
+      setAnalysisMessage("Analiza dështoi. Provo përsëri.");
+      return;
+    }
+    const data = await response.json() as { ai: AiPreview };
+    setAnalysis(data.ai);
+    setAnalysisMessage("Kontrolloje raportin para se ta dërgosh.");
   };
 
   if (submitted) return <div className="camera-view success-view"><div className="success-icon"><ShieldCheck size={34} /></div><h2>Raporti u pranua</h2><p>Komuna do ta shqyrtojë problemin në lokacionin e shënuar.</p><button className="primary-button" onClick={onClose}>Kthehu në kryefaqe</button></div>;
@@ -168,7 +188,9 @@ function ReportView({ onClose }: { onClose: () => void }) {
     <h2>Raporto një problem</h2><p>Fotografo problemin qartë për analizë më të saktë.</p>
     <button className={`location-button ${location ? "ready" : ""}`} onClick={requestLocation}><MapPin size={17} /> {location ? `${location.lat}, ${location.lng}` : "Lejo lokacionin në hartë"}</button>
     <small className="permission-message">{locationMessage}</small>
-    {photo && <button className="primary-button submit-report" disabled={!location} onClick={submitReport}>Konfirmo dhe dërgo raportin</button>}
+    {photo && !analysis && <button className="primary-button submit-report" disabled={!location} onClick={analyzeReport}>Analizo fotografinë</button>}
+    {analysisMessage && <small className="permission-message">{analysisMessage}</small>}
+    {analysis && <div className="analysis-card"><div className="analysis-header"><Sparkles size={17} /><strong>Raporti i propozuar nga AI</strong></div><h3>{analysis.title}</h3><p>{analysis.description}</p><div className="analysis-meta"><span>Kategoria: {analysis.category}</span><span>Rreziku: {analysis.danger_level}/5</span><span>Prioriteti: {analysis.suggested_priority}</span></div><button className="primary-button submit-report" onClick={submitReport}>Dërgo komunës</button><button className="retake-button" onClick={() => setAnalysis(null)}>Ndrysho fotografinë</button></div>}
   </div>;
 }
 function ReportSheet({ onClose, onContinue }: { onClose: () => void; onContinue: () => void }) { return <div className="sheet-backdrop" onClick={onClose}><div className="report-sheet" onClick={(event) => event.stopPropagation()}><div className="sheet-handle" /><p className="eyebrow">Hapi 1 nga 3</p><h2>Çfarë dëshiron të raportosh?</h2><p className="sheet-copy">Bëj një fotografi. CityFix do ta analizojë dhe do të plotësojë raportin për ty.</p><div className="upload-options"><button onClick={onContinue}><Camera /><span><strong>Hap kamerën</strong><small>Fotografo problemin tani</small></span><ChevronRight /></button><button onClick={onContinue}><Plus /><span><strong>Zgjidh nga galeria</strong><small>Ngarko një fotografi ekzistuese</small></span><ChevronRight /></button></div><button className="cancel-button" onClick={onClose}>Anulo</button></div></div>; }

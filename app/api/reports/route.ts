@@ -5,6 +5,16 @@ import { getAiProvider } from "@/lib/ai/provider";
 import { getDb } from "@/db";
 import { incidents, municipalities, reports } from "@/db/schema";
 
+export const dynamic = "force-dynamic";
+
+export async function analyzeReport(request: Request) {
+  const body: unknown = await request.json().catch(() => null);
+  const parsed = reportInputSchema.pick({ imageUrl: true, category: true }).safeParse(body);
+  if (!parsed.success || !parsed.data.imageUrl) return NextResponse.json({ error: "Fotografia mungon ose nuk është valide." }, { status: 400 });
+  const ai = await getAiProvider().analyzeImage(parsed.data.imageUrl, `Category hint: ${parsed.data.category}`);
+  return NextResponse.json({ ai, ai_status: process.env.GEMINI_API_KEY ? "complete" : "failed" });
+}
+
 export async function POST(request: Request) {
   const body: unknown = await request.json().catch(() => null);
   const parsed = reportInputSchema.safeParse(body);

@@ -3,6 +3,8 @@ import { desc, eq } from "drizzle-orm";
 import { getDb } from "@/db";
 import { incidents, municipalities } from "@/db/schema";
 
+export const dynamic = "force-dynamic";
+
 export async function GET() {
   try {
     const db = getDb();
