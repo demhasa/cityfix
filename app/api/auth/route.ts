@@ -40,7 +40,9 @@ export async function POST(request: Request) {
         surname: data.surname,
         neighborhood: data.neighborhood,
       }).returning({ id: users.id, name: users.name, surname: users.surname, role: users.role });
-      return NextResponse.json({ user }, { status: 201 });
+      const response = NextResponse.json({ user }, { status: 201 });
+      response.cookies.set("cityfix_user", user.id, { httpOnly: true, sameSite: "lax", maxAge: 60 * 60 * 24 * 7, path: "/" });
+      return response;
     }
 
     const parsed = credentialsSchema.safeParse(body);

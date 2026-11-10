@@ -69,9 +69,9 @@ export default function Home() {
           </>
         )}
         {active === "Harta" && <MapView incidents={incidents} />}
-        {active === "Raportet" && <ReportsView />}
+        {active === "Raportet" && <ReportsView user={user} onAuth={() => setShowAuth(true)} />}
         {active === "Profili" && <ProfileView user={user} onAuth={() => setShowAuth(true)} onLogout={() => setUser(null)} />}
-        {active === "Raporto" && <ReportView onClose={() => setActive("Kryefaqja")} />}
+        {active === "Raporto" && <ReportView user={user} onClose={() => setActive("Kryefaqja")} />}
       </section>
 
       <nav className="bottom-nav" aria-label="Navigimi kryesor">
@@ -88,7 +88,15 @@ function IncidentCard({ incident }: { incident: Incident }) {
 }
 
 function MapView({ incidents }: { incidents: Incident[] }) { return <div className="empty-view"><div className="map-preview"><div className="map-grid" />{incidents.slice(0, 6).map((incident, index) => <span className={`map-pin pin-${(index % 3) + 1}`} key={incident.id} title={incident.title}><MapPin /></span>)}<div className="map-label">{incidents.length} probleme në databazë</div></div><h2>Harta e qytetit</h2><p>Shiko problemet e raportuara rreth teje.</p></div>; }
-function ReportsView() { return <div className="screen-view"><p className="eyebrow">Aktiviteti yt</p><h1>Raportet e mia</h1><div className="stats-row"><div><strong>0</strong><span>Raporte</span></div><div><strong>0</strong><span>Të zgjidhura</span></div><div><strong>0</strong><span>Mbështetje</span></div></div><p className="empty-copy">Raportet e tua do të shfaqen këtu pas dërgimit.</p></div>; }
+function ReportsView({ user, onAuth }: { user: User | null; onAuth: () => void }) {
+  const [reports, setReports] = useState<Array<{ id: string; title: string; category: string; status: string; createdAt: string }>>([]);
+  useEffect(() => {
+    if (!user) return;
+    void fetch("/api/reports", { headers: { "x-cityfix-user": user.id } }).then((response) => response.json() as Promise<{ reports: typeof reports }>).then((data) => setReports(data.reports)).catch(() => setReports([]));
+  }, [user]);
+  if (!user) return <div className="screen-view"><p className="eyebrow">Aktiviteti yt</p><h1>Raportet e mia</h1><p className="empty-copy">Hyr për të parë dhe ruajtur raportet e tua.</p><button className="primary-button" onClick={onAuth}>Hyr / Regjistrohu</button></div>;
+  return <div className="screen-view"><p className="eyebrow">Aktiviteti yt</p><h1>Raportet e mia</h1><div className="stats-row"><div><strong>{reports.length}</strong><span>Raporte</span></div><div><strong>{reports.filter((report) => report.status === "resolved").length}</strong><span>Të zgjidhura</span></div><div><strong>0</strong><span>Mbështetje</span></div></div>{reports.length ? <div className="my-reports">{reports.map((report) => <article className="my-report" key={report.id}><strong>{report.title}</strong><span>{report.category} · {report.status}</span></article>)}</div> : <p className="empty-copy">Raportet e tua do të shfaqen këtu pas dërgimit.</p>}</div>;
+}
 function ProfileView({ user, onAuth, onLogout }: { user: User | null; onAuth: () => void; onLogout: () => void }) {
   if (!user) return <div className="screen-view profile-view"><div className="profile-avatar">?</div><h1>Mirë se vjen</h1><p>Krijo llogari ose hyr për të menaxhuar raportet.</p><button className="primary-button" onClick={onAuth}>Hyr / Regjistrohu</button></div>;
   return <div className="screen-view profile-view"><div className="profile-avatar">{user.name[0]}</div><h1>{user.name} {user.surname}</h1><p>{user.role === "admin" ? "Administrator" : "Qytetar"} · Prishtinë</p><div className="profile-menu"><button onClick={() => alert("Nuk ka njoftime të reja.")}><Bell /> Njoftimet <ChevronRight /></button><button onClick={() => alert("Të dhënat ruhen në mënyrë të sigurt.")}><ShieldCheck /> Privatësia dhe siguria <ChevronRight /></button><button onClick={() => alert("Profili yt është aktiv.")}><CircleUserRound /> Llogaria ime <ChevronRight /></button></div><button className="logout-button" onClick={onLogout}>Dil nga llogaria</button></div>;
@@ -107,7 +115,7 @@ function AuthSheet({ onClose, onSuccess }: { onClose: () => void; onSuccess: (us
   };
   return <div className="sheet-backdrop" onClick={onClose}><div className="auth-sheet" onClick={(event) => event.stopPropagation()}><button className="sheet-close" onClick={onClose}>×</button><p className="eyebrow">Profili CityFix</p><h2>{mode === "login" ? "Hyr në llogari" : "Krijo llogari"}</h2><form onSubmit={submit}>{mode === "register" && <><input required placeholder="Emri" value={form.name} onChange={update("name")} /><input required placeholder="Mbiemri" value={form.surname} onChange={update("surname")} /><input required placeholder="Lagjja ku banoni" value={form.neighborhood} onChange={update("neighborhood")} /><input type="email" placeholder="Email (opsionale)" value={form.email} onChange={update("email")} /><input type="tel" placeholder="Telefon (opsional)" value={form.phone} onChange={update("phone")} /></>}<input required placeholder="Numri personal" value={form.personalNumber} onChange={update("personalNumber")} /><input required type="password" minLength={6} placeholder="Fjalëkalimi" value={form.password} onChange={update("password")} />{error && <p className="form-error">{error}</p>}<button className="primary-button" type="submit">{mode === "login" ? "Hyr" : "Regjistrohu"}</button></form><button className="link-button auth-switch" onClick={() => setMode(mode === "login" ? "register" : "login")}>{mode === "login" ? "Nuk ke llogari? Regjistrohu" : "Ke llogari? Hyr"}</button></div></div>;
 }
-function ReportView({ onClose }: { onClose: () => void }) {
+function ReportView({ user, onClose }: { user: User | null; onClose: () => void }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const [photo, setPhoto] = useState<string | null>(null);
@@ -177,7 +185,7 @@ function ReportView({ onClose }: { onClose: () => void }) {
     if (!photo || !location || !analysis) return;
     const response = await fetch("/api/reports", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...(user ? { "x-cityfix-user": user.id } : {}) },
       body: JSON.stringify({ title: analysis.title, description: analysis.description, category: analysis.category, lat: location.lat, lng: location.lng, imageUrl: photo }),
     });
     if (response.ok) setSubmitted(true);
