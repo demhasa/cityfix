@@ -1,4 +1,5 @@
 import { neon } from "@neondatabase/serverless";
+import bcrypt from "bcryptjs";
 
 const url = process.env.DATABASE_URL;
 if (!url) throw new Error("DATABASE_URL is required.");
@@ -12,6 +13,18 @@ const municipality = await sql`
   RETURNING id
 `;
 const municipalityId = municipality[0].id;
+
+const demoPassword = await bcrypt.hash("CityFix123!", 10);
+for (const profile of [
+  ["1000000001", "demo@cityfix.test", null, "Agim", "Demhasaj", "Dardani", "citizen"],
+  ["1000000002", "admin@cityfix.test", null, "Admin", "CityFix", "Qendër", "admin"],
+] as const) {
+  await sql`
+    INSERT INTO users (municipality_id, personal_number, email, phone, password_hash, name, surname, neighborhood, role)
+    VALUES (${municipalityId}, ${profile[0]}, ${profile[1]}, ${profile[2]}, ${demoPassword}, ${profile[3]}, ${profile[4]}, ${profile[5]}, ${profile[6]})
+    ON CONFLICT (personal_number) DO UPDATE SET role = EXCLUDED.role, password_hash = EXCLUDED.password_hash
+  `;
+}
 
 const demoIncidents = [
   ["Gropë e madhe në rrugë", "Gropë", "Gropë e rrezikshme pranë kryqëzimit dhe trotuarit.", "pothole", "urgent", 42.6604, 21.1612, 14, 88],

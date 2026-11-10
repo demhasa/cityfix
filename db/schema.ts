@@ -11,9 +11,13 @@ export const municipalities = pgTable("municipalities", {
 export const users = pgTable("users", {
   id: uuid("id").defaultRandom().primaryKey(),
   municipalityId: uuid("municipality_id").references(() => municipalities.id),
-  email: text("email").notNull().unique(),
+  personalNumber: text("personal_number").notNull().unique(),
+  email: text("email").unique(),
+  phone: text("phone").unique(),
   passwordHash: text("password_hash").notNull(),
   name: text("name").notNull(),
+  surname: text("surname").notNull(),
+  neighborhood: text("neighborhood").notNull(),
   role: text("role").notNull().default("citizen"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });

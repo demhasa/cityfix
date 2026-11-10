@@ -8,6 +8,8 @@ CityFix is a mobile-first municipal issue reporting platform for the Prishtina a
 - Responsive `/admin` dashboard with KPI cards, urgent incidents, chart and municipality scope.
 - Drizzle/Postgres schema for municipalities, users, incidents, reports, status history, notifications and sensitive places.
 - Zod-validated report API and provider abstraction with Gemini vision integration plus a safe fallback when no key is configured.
+- Profile registration/login with required personal number, name, surname and neighborhood; email or phone is optional (at least one contact is required).
+- Interactive admin login and incident status controls at `/admin`.
 - Unit tests for duplicate detection, priority scoring and AI output validation.
 
 ## Local development
@@ -22,6 +24,11 @@ npm run dev
 Open [http://localhost:3000](http://localhost:3000) or [http://localhost:3000/admin](http://localhost:3000/admin).
 
 Copy `.env.example` to `.env.local` for services. `DATABASE_URL` is required for database-backed incidents. `GEMINI_API_KEY` enables real Gemini image analysis; reports remain submittable with an explicit fallback status when it is absent.
+
+Run `npm run seed` after applying the migrations to create demo data and these test profiles:
+
+- Citizen: personal number `1000000001`, password `CityFix123!`
+- Admin: personal number `1000000002`, password `CityFix123!`
 
 ## Validation
 
