@@ -8,6 +8,13 @@ export const municipalities = pgTable("municipalities", {
   centerLng: real("center_lng").notNull(),
 });
 
+export const incidentAssignments = pgTable("incident_assignments", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  incidentId: uuid("incident_id").references(() => incidents.id).notNull(),
+  teamId: uuid("team_id").references(() => teams.id).notNull(),
+  assignedAt: timestamp("assigned_at").defaultNow().notNull(),
+});
+
 export const users = pgTable("users", {
   id: uuid("id").defaultRandom().primaryKey(),
   municipalityId: uuid("municipality_id").references(() => municipalities.id),
