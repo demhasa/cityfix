@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Image from "next/image";
 import {
   Bell,
   Camera,
@@ -27,6 +28,7 @@ type Incident = {
   time: string;
 };
 type AiPreview = { title: string; description: string; category: string; danger_level: number; suggested_priority: string };
+type User = { id: string; name: string; surname: string; role: string };
 
 const navItems = [
   { label: "Kryefaqja", icon: HomeIcon },
@@ -39,6 +41,9 @@ const navItems = [
 export default function Home() {
   const [active, setActive] = useState("Kryefaqja");
   const [showReport, setShowReport] = useState(false);
+  const [showAuth, setShowAuth] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
+  const [showNotifications, setShowNotifications] = useState(false);
   const [incidents, setIncidents] = useState<Incident[]>([]);
 
   useEffect(() => {
@@ -49,22 +54,23 @@ export default function Home() {
     <main className="cityfix-app">
       <header className="topbar">
         <div className="brand"><div className="brand-mark"><ShieldCheck size={19} /></div><div><strong>CityFix</strong><span>Prishtinë · Kosovë</span></div></div>
-        <div className="top-actions"><button aria-label="Njoftimet" className="icon-button"><Bell size={20} /><i /></button><button aria-label="Menuja" className="icon-button"><Menu size={21} /></button></div>
+        <div className="top-actions"><button aria-label="Njoftimet" className="icon-button" onClick={() => setShowNotifications((value) => !value)}><Bell size={20} /><i /></button><button aria-label="Menuja" className="icon-button" onClick={() => setActive("Profili")}><Menu size={21} /></button></div>
       </header>
+      {showNotifications && <button className="notification-popover" onClick={() => setShowNotifications(false)}>Nuk ka njoftime të reja.</button>}
 
       <section className="content">
         {active === "Kryefaqja" && (
           <>
-            <div className="greeting"><div><p className="eyebrow">E martë, 9 nëntor</p><h1>Çfarë po ndodh<br /><em>në lagjen tënde?</em></h1></div><div className="avatar">A</div></div>
+            <div className="greeting"><div><p className="eyebrow">E martë, 9 nëntor</p><h1>Çfarë po ndodh<br /><em>në lagjen tënde?</em></h1></div><button className="avatar" onClick={() => setActive("Profili")}>{user ? user.name[0] : "A"}</button></div>
             <button className="report-cta" onClick={() => setShowReport(true)}><span className="camera-circle"><Camera size={24} /></span><span><strong>Raporto një problem</strong><small>Ndihmo qytetin të bëhet më i mirë</small></span><ChevronRight size={21} /></button>
-            <div className="section-heading"><div><p className="eyebrow">Në afërsi</p><h2>Problemet e fundit</h2></div><button className="link-button">Shiko të gjitha <ChevronRight size={16} /></button></div>
+            <div className="section-heading"><div><p className="eyebrow">Në afërsi</p><h2>Problemet e fundit</h2></div><button className="link-button" onClick={() => setActive("Harta")}>Shiko të gjitha <ChevronRight size={16} /></button></div>
             <div className="incident-list">{incidents.length ? incidents.map((incident) => <IncidentCard key={incident.id} incident={incident} />) : <p className="empty-copy">Duke ngarkuar incidentet reale...</p>}</div>
             <div className="community-card"><div className="community-icon"><Sparkles size={20} /></div><div><strong>Së bashku bëjmë ndryshimin</strong><p>Ke parë një problem që dikush tjetër e ka raportuar? Konfirmoje.</p></div><ChevronRight size={18} /></div>
           </>
         )}
         {active === "Harta" && <MapView incidents={incidents} />}
         {active === "Raportet" && <ReportsView />}
-        {active === "Profili" && <ProfileView />}
+        {active === "Profili" && <ProfileView user={user} onAuth={() => setShowAuth(true)} onLogout={() => setUser(null)} />}
         {active === "Raporto" && <ReportView onClose={() => setActive("Kryefaqja")} />}
       </section>
 
@@ -72,6 +78,7 @@ export default function Home() {
         {navItems.map(({ label, icon: Icon }) => <button key={label} className={active === label ? "active" : ""} onClick={() => { setActive(label); setShowReport(false); }}><span className={label === "Raporto" ? "camera-nav" : ""}><Icon size={label === "Raporto" ? 25 : 21} /></span><small>{label}</small></button>)}
       </nav>
       {showReport && <ReportSheet onClose={() => setShowReport(false)} onContinue={() => { setShowReport(false); setActive("Raporto"); }} />}
+      {showAuth && <AuthSheet onClose={() => setShowAuth(false)} onSuccess={(nextUser) => { setUser(nextUser); setShowAuth(false); }} />}
     </main>
   );
 }
@@ -82,7 +89,24 @@ function IncidentCard({ incident }: { incident: Incident }) {
 
 function MapView({ incidents }: { incidents: Incident[] }) { return <div className="empty-view"><div className="map-preview"><div className="map-grid" />{incidents.slice(0, 6).map((incident, index) => <span className={`map-pin pin-${(index % 3) + 1}`} key={incident.id} title={incident.title}><MapPin /></span>)}<div className="map-label">{incidents.length} probleme në databazë</div></div><h2>Harta e qytetit</h2><p>Shiko problemet e raportuara rreth teje.</p></div>; }
 function ReportsView() { return <div className="screen-view"><p className="eyebrow">Aktiviteti yt</p><h1>Raportet e mia</h1><div className="stats-row"><div><strong>0</strong><span>Raporte</span></div><div><strong>0</strong><span>Të zgjidhura</span></div><div><strong>0</strong><span>Mbështetje</span></div></div><p className="empty-copy">Raportet e tua do të shfaqen këtu pas dërgimit.</p></div>; }
-function ProfileView() { return <div className="screen-view profile-view"><div className="profile-avatar">A</div><h1>Agim Demhasaj</h1><p>Qytetar · Prishtinë</p><div className="profile-menu"><button><Bell /> Njoftimet <ChevronRight /></button><button><ShieldCheck /> Privatësia dhe siguria <ChevronRight /></button><button><CircleUserRound /> Llogaria ime <ChevronRight /></button></div></div>; }
+function ProfileView({ user, onAuth, onLogout }: { user: User | null; onAuth: () => void; onLogout: () => void }) {
+  if (!user) return <div className="screen-view profile-view"><div className="profile-avatar">?</div><h1>Mirë se vjen</h1><p>Krijo llogari ose hyr për të menaxhuar raportet.</p><button className="primary-button" onClick={onAuth}>Hyr / Regjistrohu</button></div>;
+  return <div className="screen-view profile-view"><div className="profile-avatar">{user.name[0]}</div><h1>{user.name} {user.surname}</h1><p>{user.role === "admin" ? "Administrator" : "Qytetar"} · Prishtinë</p><div className="profile-menu"><button onClick={() => alert("Nuk ka njoftime të reja.")}><Bell /> Njoftimet <ChevronRight /></button><button onClick={() => alert("Të dhënat ruhen në mënyrë të sigurt.")}><ShieldCheck /> Privatësia dhe siguria <ChevronRight /></button><button onClick={() => alert("Profili yt është aktiv.")}><CircleUserRound /> Llogaria ime <ChevronRight /></button></div><button className="logout-button" onClick={onLogout}>Dil nga llogaria</button></div>;
+}
+function AuthSheet({ onClose, onSuccess }: { onClose: () => void; onSuccess: (user: User) => void }) {
+  const [mode, setMode] = useState<"login" | "register">("login");
+  const [form, setForm] = useState({ personalNumber: "", password: "", name: "", surname: "", neighborhood: "", email: "", phone: "" });
+  const [error, setError] = useState("");
+  const update = (key: keyof typeof form) => (event: React.ChangeEvent<HTMLInputElement>) => setForm((current) => ({ ...current, [key]: event.target.value }));
+  const submit = async (event: React.FormEvent) => {
+    event.preventDefault(); setError("");
+    const response = await fetch("/api/auth", { method: "POST", headers: { "Content-Type": "application/json", "x-auth-action": mode }, body: JSON.stringify(form) });
+    const data = await response.json() as { user?: User; error?: string };
+    if (!response.ok || !data.user) { setError(data.error ?? "Veprimi dështoi."); return; }
+    onSuccess(data.user);
+  };
+  return <div className="sheet-backdrop" onClick={onClose}><div className="auth-sheet" onClick={(event) => event.stopPropagation()}><button className="sheet-close" onClick={onClose}>×</button><p className="eyebrow">Profili CityFix</p><h2>{mode === "login" ? "Hyr në llogari" : "Krijo llogari"}</h2><form onSubmit={submit}>{mode === "register" && <><input required placeholder="Emri" value={form.name} onChange={update("name")} /><input required placeholder="Mbiemri" value={form.surname} onChange={update("surname")} /><input required placeholder="Lagjja ku banoni" value={form.neighborhood} onChange={update("neighborhood")} /><input type="email" placeholder="Email (opsionale)" value={form.email} onChange={update("email")} /><input type="tel" placeholder="Telefon (opsional)" value={form.phone} onChange={update("phone")} /></>}<input required placeholder="Numri personal" value={form.personalNumber} onChange={update("personalNumber")} /><input required type="password" minLength={6} placeholder="Fjalëkalimi" value={form.password} onChange={update("password")} />{error && <p className="form-error">{error}</p>}<button className="primary-button" type="submit">{mode === "login" ? "Hyr" : "Regjistrohu"}</button></form><button className="link-button auth-switch" onClick={() => setMode(mode === "login" ? "register" : "login")}>{mode === "login" ? "Nuk ke llogari? Regjistrohu" : "Ke llogari? Hyr"}</button></div></div>;
+}
 function ReportView({ onClose }: { onClose: () => void }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -179,7 +203,7 @@ function ReportView({ onClose }: { onClose: () => void }) {
   if (submitted) return <div className="camera-view success-view"><div className="success-icon"><ShieldCheck size={34} /></div><h2>Raporti u pranua</h2><p>Komuna do ta shqyrtojë problemin në lokacionin e shënuar.</p><button className="primary-button" onClick={onClose}>Kthehu në kryefaqe</button></div>;
   return <div className="camera-view">
     <div className={`camera-frame ${photo ? "has-photo" : ""}`}>
-      {photo ? <img src={photo} alt="Fotografia e problemit" /> : <video ref={videoRef} className="camera-video" playsInline muted aria-label="Pamja e kamerës" />}
+      {photo ? <Image src={photo} alt="Fotografia e problemit" fill unoptimized sizes="(max-width: 540px) 100vw, 540px" /> : <video ref={videoRef} className="camera-video" playsInline muted aria-label="Pamja e kamerës" />}
       {!photo && <><div className="camera-hint"><Sparkles size={18} /> {cameraMessage}</div><div className="camera-crosshair" /></>}
     </div>
     <div className="camera-actions">
