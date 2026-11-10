@@ -26,6 +26,8 @@ type Incident = {
   priority: "urgent" | "high" | "normal";
   area: string;
   reports: number;
+  likes: number;
+  imageUrl: string | null;
   time: string;
   lat: number;
   lng: number;
@@ -74,7 +76,7 @@ export default function Home() {
             <div className="greeting"><div><p className="eyebrow">E martë, 9 nëntor</p><h1>Çfarë po ndodh<br /><em>në lagjen tënde?</em></h1></div><button className="avatar" onClick={() => setActive("Profili")}>{user ? user.name[0] : "A"}</button></div>
             <button className="report-cta" onClick={() => setShowReport(true)}><span className="camera-circle"><Camera size={24} /></span><span><strong>Raporto një problem</strong><small>Ndihmo qytetin të bëhet më i mirë</small></span><ChevronRight size={21} /></button>
             <div className="section-heading"><div><p className="eyebrow">Në afërsi</p><h2>Problemet e fundit</h2></div><button className="link-button" onClick={() => setActive("Harta")}>Shiko të gjitha <ChevronRight size={16} /></button></div>
-            <div className="incident-list">{incidents.length ? incidents.map((incident) => <IncidentCard key={incident.id} incident={incident} />) : <p className="empty-copy">Duke ngarkuar incidentet reale...</p>}</div>
+            <div className="incident-list">{incidents.length ? incidents.map((incident) => <IncidentCard key={incident.id} incident={incident} user={user} onLike={async (id) => { if (!user) { setShowAuth(true); return; } const response = await fetch(`/api/incidents/${id}/like`, { method: "POST", headers: { "x-cityfix-user": user.id } }); if (response.ok) { const result = await response.json() as { likes: number }; setIncidents((current) => current.map((item) => item.id === id ? { ...item, likes: result.likes } : item)); } }} />) : <p className="empty-copy">Duke ngarkuar incidentet reale...</p>}</div>
             <div className="community-card"><div className="community-icon"><Sparkles size={20} /></div><div><strong>Së bashku bëjmë ndryshimin</strong><p>Ke parë një problem që dikush tjetër e ka raportuar? Konfirmoje.</p></div><ChevronRight size={18} /></div>
           </>
         )}
@@ -93,8 +95,8 @@ export default function Home() {
   );
 }
 
-function IncidentCard({ incident }: { incident: Incident }) {
-  return <article className="incident-card"><div className={`incident-photo photo-${incident.priority}`}><MapPin size={22} /><span>{incident.area}</span></div><div className="incident-info"><div className="card-meta"><span className={`priority-dot ${incident.priority}`} />{incident.category}<time>{incident.time}</time></div><h3>{incident.title}</h3><div className="card-footer"><span className={`status ${incident.status === "Në proces" ? "progress" : ""}`}>{incident.status}</span><button aria-label="Konfirmo raportin"><ThumbsUp size={15} /> {incident.reports}</button></div></div></article>;
+function IncidentCard({ incident, user, onLike }: { incident: Incident; user: User | null; onLike: (id: string) => Promise<void> }) {
+  return <article className="incident-card"><div className={`incident-photo photo-${incident.priority}`}>{incident.imageUrl ? <Image src={incident.imageUrl} alt="" fill unoptimized sizes="78px" /> : <><MapPin size={22} /><span>{incident.area}</span></>}</div><div className="incident-info"><div className="card-meta"><span className={`priority-dot ${incident.priority}`} />{incident.category}<time>{incident.time}</time></div><h3>{incident.title}</h3><div className="card-footer"><span className={`status ${incident.status === "Në proces" ? "progress" : ""}`}>{incident.status}</span><button aria-label={user ? "Pëlqe problemin" : "Hyr për të pëlqyer"} onClick={() => void onLike(incident.id)}><ThumbsUp size={15} /> {incident.likes}</button></div></div></article>;
 }
 
 function MapView({ incidents }: { incidents: Incident[] }) { return <div className="empty-view"><CityMap incidents={incidents} className="citizen-map" /><h2>Harta e Prishtinës</h2><p>{incidents.length} probleme të sinkronizuara nga databaza.</p></div>; }

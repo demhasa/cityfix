@@ -91,3 +91,10 @@ export const teams = pgTable("teams", {
   leadName: text("lead_name").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
+
+export const incidentLikes = pgTable("incident_likes", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  incidentId: uuid("incident_id").references(() => incidents.id).notNull(),
+  userId: uuid("user_id").references(() => users.id).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => [index("incident_likes_incident_idx").on(table.incidentId), index("incident_likes_user_idx").on(table.userId)]);

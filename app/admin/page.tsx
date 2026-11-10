@@ -5,7 +5,7 @@ import { AlertTriangle, BarChart3, CheckCircle2, Clock3, Map, ShieldCheck, Users
 import CityMap from "@/components/city-map";
 import "./admin.css";
 
-type Row = { id: string; title: string; category: string; area: string; priority: string; status: string; lat: number; lng: number };
+type Row = { id: string; title: string; category: string; area: string; priority: string; status: string; lat: number; lng: number; imageUrl: string | null; likes: number };
 type Team = { id: string; name: string; specialty: string; status: string; leadName: string };
 const nav = [{ key: "dashboard", label: "Dashboard", icon: BarChart3 }, { key: "incidents", label: "Incidentet", icon: AlertTriangle }, { key: "teams", label: "Ekipet", icon: Users }, { key: "map", label: "Harta", icon: Map }, { key: "reports", label: "Raportet", icon: CheckCircle2 }];
 
