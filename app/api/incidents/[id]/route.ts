@@ -21,21 +21,20 @@ export async function PATCH(request: Request, context: RouteContext<"/api/incide
 }
 
 export async function DELETE(_request: Request, context: RouteContext<"/api/incidents/[id]">) {
-    try {
-      const { id } = await context.params;
-      const db = getDb();
-      const result = await db.transaction(async (tx) => {
-        await tx.delete(reports).where(eq(reports.incidentId, id));
-        await tx.delete(statusHistory).where(eq(statusHistory.incidentId, id));
-        await tx.delete(notifications).where(eq(notifications.incidentId, id));
-        await tx.delete(incidentLikes).where(eq(incidentLikes.incidentId, id));
-        await tx.delete(incidentAssignments).where(eq(incidentAssignments.incidentId, id));
-        return tx.delete(incidents).where(eq(incidents.id, id)).returning({ id: incidents.id });
-      });
-      if (!result[0]) return NextResponse.json({ error: "Incidenti nuk u gjet." }, { status: 404 });
-      return NextResponse.json({ deleted: result[0].id });
-    } catch (error) {
-      console.error("Failed to delete incident", error);
-      return NextResponse.json({ error: "Incidenti nuk mund të fshihet." }, { status: 503 });
+  try {
+    const { id } = await context.params;
+    const db = getDb();
+    const [existing] = await db.select({ id: incidents.id }).from(incidents).where(eq(incidents.id, id)).limit(1);
+    if (!existing) return NextResponse.json({ error: "Incidenti nuk u gjet." }, { status: 404 });
+    await db.delete(reports).where(eq(reports.incidentId, id));
+    await db.delete(statusHistory).where(eq(statusHistory.incidentId, id));
+    await db.delete(notifications).where(eq(notifications.incidentId, id));
+    await db.delete(incidentLikes).where(eq(incidentLikes.incidentId, id));
+    await db.delete(incidentAssignments).where(eq(incidentAssignments.incidentId, id));
+    await db.delete(incidents).where(eq(incidents.id, id));
+    return NextResponse.json({ deleted: id });
+  } catch (error) {
+    console.error("Failed to delete incident", error);
+    return NextResponse.json({ error: "Incidenti nuk mund të fshihet." }, { status: 503 });
   }
 }

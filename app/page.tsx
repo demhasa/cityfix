@@ -17,6 +17,7 @@ import {
   ThumbsUp,
 } from "lucide-react";
 import CityMap from "@/components/city-map";
+import { categories } from "@/lib/domain";
 
 type Incident = {
   id: string;
@@ -135,6 +136,7 @@ function ReportView({ user, onClose }: { user: User | null; onClose: () => void 
   const [cameraMessage, setCameraMessage] = useState("Duke kërkuar qasje në kamerë...");
   const [locationMessage, setLocationMessage] = useState("Lokacioni nuk është marrë ende.");
   const [analysis, setAnalysis] = useState<AiPreview | null>(null);
+  const [editingAnalysis, setEditingAnalysis] = useState(false);
   const [analysisMessage, setAnalysisMessage] = useState("");
   const [submitted, setSubmitted] = useState(false);
 
@@ -234,7 +236,7 @@ function ReportView({ user, onClose }: { user: User | null; onClose: () => void 
     <small className="permission-message">{locationMessage}</small>
     {photo && !analysis && <button className="primary-button submit-report" disabled={!location} onClick={analyzeReport}>Analizo fotografinë</button>}
     {analysisMessage && <small className="permission-message">{analysisMessage}</small>}
-    {analysis && <div className="analysis-card"><div className="analysis-header"><Sparkles size={17} /><strong>Raporti i propozuar nga AI</strong></div><h3>{analysis.title}</h3><p>{analysis.description}</p><div className="analysis-meta"><span>Kategoria: {analysis.category}</span><span>Rreziku: {analysis.danger_level}/5</span><span>Prioriteti: {analysis.suggested_priority}</span></div><button className="primary-button submit-report" onClick={submitReport}>Dërgo komunës</button><button className="retake-button" onClick={() => setAnalysis(null)}>Ndrysho fotografinë</button></div>}
+    {analysis && <div className="analysis-card"><div className="analysis-header"><Sparkles size={17} /><strong>Raporti i propozuar nga AI</strong></div><p className="ai-warning">AI mund të bëjë gabime. Shiko raportin dhe edito.</p>{editingAnalysis ? <div className="analysis-edit-form"><label>Titulli<input value={analysis.title} onChange={(event) => setAnalysis({ ...analysis, title: event.target.value })} /></label><label>Kategoria<select value={analysis.category} onChange={(event) => setAnalysis({ ...analysis, category: event.target.value })}>{categories.map((category) => <option value={category} key={category}>{category}</option>)}</select></label><label>Përshkrimi<textarea value={analysis.description} onChange={(event) => setAnalysis({ ...analysis, description: event.target.value })} /></label><button className="primary-button submit-report" onClick={() => setEditingAnalysis(false)}>Ruaj ndryshimet</button></div> : <><h3>{analysis.title}</h3><p>{analysis.description}</p><div className="analysis-meta"><span>Kategoria: {analysis.category}</span><span>Rreziku: {analysis.danger_level}/5</span><span>Prioriteti: {analysis.suggested_priority}</span></div><button className="primary-button submit-report" onClick={submitReport}>Dërgo raportin e AI pa ndryshime</button><button className="retake-button" onClick={() => setEditingAnalysis(true)}>Shiko raportin dhe edito</button></>}{editingAnalysis && <button className="retake-button" onClick={submitReport}>Dërgo këtë raport</button>}<button className="retake-button" onClick={() => { setAnalysis(null); setEditingAnalysis(false); }}>Ndrysho fotografinë</button></div>}
   </div>;
 }
 function ReportSheet({ onClose, onContinue }: { onClose: () => void; onContinue: () => void }) { return <div className="sheet-backdrop" onClick={onClose}><div className="report-sheet" onClick={(event) => event.stopPropagation()}><div className="sheet-handle" /><p className="eyebrow">Hapi 1 nga 3</p><h2>Çfarë dëshiron të raportosh?</h2><p className="sheet-copy">Bëj një fotografi. CityFix do ta analizojë dhe do të plotësojë raportin për ty.</p><div className="upload-options"><button onClick={onContinue}><Camera /><span><strong>Hap kamerën</strong><small>Fotografo problemin tani</small></span><ChevronRight /></button><button onClick={onContinue}><Plus /><span><strong>Zgjidh nga galeria</strong><small>Ngarko një fotografi ekzistuese</small></span><ChevronRight /></button></div><button className="cancel-button" onClick={onClose}>Anulo</button></div></div>; }
