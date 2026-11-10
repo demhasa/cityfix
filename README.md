@@ -10,6 +10,8 @@ CityFix is a mobile-first municipal issue reporting platform for the Prishtina a
 - Zod-validated report API and provider abstraction with Gemini vision integration plus a safe fallback when no key is configured.
 - Profile registration/login with required personal number, name, surname and neighborhood; email or phone is optional (at least one contact is required).
 - Interactive admin login and incident status controls at `/admin`.
+- OpenFreeMap/MapLibre maps in the citizen app and admin panel, centered on Prishtina with live incident pins.
+- Admin sections persist as hash routes such as `/admin#dashboard`, `/admin#incidents`, `/admin#teams`, `/admin#map`, and `/admin#reports`.
 - Unit tests for duplicate detection, priority scoring and AI output validation.
 
 ## Local development
