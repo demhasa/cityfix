@@ -6,7 +6,7 @@ ALTER TABLE users ADD COLUMN IF NOT EXISTS neighborhood text;
 UPDATE users
 SET personal_number = COALESCE(personal_number, 'LEGACY-' || id::text),
     surname = COALESCE(surname, ''),
-    neighborhood = COALESCE(neighborhood, 'Prishtinë')
+    neighborhood = COALESCE(neighborhood, 'Prishtina')
 WHERE personal_number IS NULL OR surname IS NULL OR neighborhood IS NULL;
 
 ALTER TABLE users ALTER COLUMN personal_number SET NOT NULL;
