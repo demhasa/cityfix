@@ -44,14 +44,15 @@ export async function POST(request: Request) {
     const municipality = await db.select({ id: municipalities.id }).from(municipalities).where(eq(municipalities.slug, "prishtina")).limit(1);
     if (!municipality[0]) return NextResponse.json({ error: "Komuna nuk është konfiguruar." }, { status: 503 });
     const reporterId = request.headers.get("x-cityfix-user") || undefined;
+    const submittedAi = { ...ai, title: parsed.data.title, description: parsed.data.description, category: parsed.data.category };
     const [incident] = await db.insert(incidents).values({
       municipalityId: municipality[0].id,
-      category: ai.category,
-      title: ai.title,
-      description: ai.description,
+      category: parsed.data.category,
+      title: parsed.data.title,
+      description: parsed.data.description,
       priority: ai.suggested_priority === "urgent" ? "urgent" : ai.suggested_priority,
       priorityScore: ai.danger_level * 10,
-      priorityBreakdown: ai,
+      priorityBreakdown: submittedAi,
       lat: parsed.data.lat,
       lng: parsed.data.lng,
     }).returning();
@@ -59,12 +60,12 @@ export async function POST(request: Request) {
       incidentId: incident.id,
       reporterId,
       photoUrl: parsed.data.imageUrl,
-      aiJson: ai,
+      aiJson: submittedAi,
       aiStatus: process.env.GEMINI_API_KEY ? "complete" : "failed",
       lat: parsed.data.lat,
       lng: parsed.data.lng,
     });
-    return NextResponse.json({ incident: { ...incident, ai, ai_status: process.env.GEMINI_API_KEY ? "complete" : "failed" } }, { status: 201 });
+    return NextResponse.json({ incident: { ...incident, ai: submittedAi, ai_status: process.env.GEMINI_API_KEY ? "complete" : "failed" } }, { status: 201 });
   } catch (error) {
     console.error("Failed to save report", error);
     return NextResponse.json({ error: "Raporti u analizua, por nuk u ruajt në databazë." }, { status: 503 });
