@@ -36,6 +36,18 @@ type Incident = {
 type AiPreview = { title: string; description: string; category: string; danger_level: number; suggested_priority: string };
 type User = { id: string; name: string; surname: string; role: string };
 
+const categoryLabels: Record<string, string> = {
+  pothole: "Gropë në rrugë",
+  street_light: "Ndriçim publik",
+  garbage: "Mbeturina",
+  traffic_sign: "Shenjë trafiku",
+  sidewalk: "Trotuar",
+  sewage: "Kanalizim / Përmbytje",
+  public_space_damage: "Dëmtim i hapësirës publike",
+  illegal_parking: "Parkim ilegal",
+  other: "Tjetër",
+};
+
 const navItems = [
   { label: "Kryefaqja", icon: HomeIcon },
   { label: "Harta", icon: MapPin },
@@ -138,6 +150,9 @@ function ReportView({ user, onClose }: { user: User | null; onClose: () => void 
   const [analysis, setAnalysis] = useState<AiPreview | null>(null);
   const [editingAnalysis, setEditingAnalysis] = useState(false);
   const [analysisMessage, setAnalysisMessage] = useState("");
+  const [manualMode, setManualMode] = useState(false);
+  const [manualDraft, setManualDraft] = useState({ title: "", description: "", category: "other" });
+  const [selectedCategory, setSelectedCategory] = useState("other");
   const [submitted, setSubmitted] = useState(false);
 
   useEffect(() => {
@@ -196,13 +211,19 @@ function ReportView({ user, onClose }: { user: User | null; onClose: () => void 
   };
 
   const submitReport = async () => {
-    if (!photo || !location || !analysis) return;
+    if (!photo || !location || (!analysis && !manualMode)) return;
+    const draft = analysis ?? manualDraft;
+    if (!draft.title.trim() || !draft.description.trim()) {
+      setAnalysisMessage("Plotëso titullin dhe përshkrimin para dërgimit.");
+      return;
+    }
     const response = await fetch("/api/reports", {
       method: "POST",
       headers: { "Content-Type": "application/json", ...(user ? { "x-cityfix-user": user.id } : {}) },
-      body: JSON.stringify({ title: analysis.title, description: analysis.description, category: analysis.category, lat: location.lat, lng: location.lng, imageUrl: photo }),
+      body: JSON.stringify({ title: draft.title, description: draft.description, category: draft.category, lat: location.lat, lng: location.lng, imageUrl: photo }),
     });
     if (response.ok) setSubmitted(true);
+    else setAnalysisMessage("Raporti nuk u ruajt. Provo përsëri.");
   };
 
   const analyzeReport = async () => {
@@ -211,10 +232,10 @@ function ReportView({ user, onClose }: { user: User | null; onClose: () => void 
     const response = await fetch("/api/reports/analyze", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ imageUrl: photo, category: "other" }),
+      body: JSON.stringify({ imageUrl: photo, category: selectedCategory }),
     });
     if (!response.ok) {
-      setAnalysisMessage("Analiza dështoi. Provo përsëri.");
+      setAnalysisMessage("Analiza AI nuk është e disponueshme. Mund ta plotësosh raportin manualisht.");
       return;
     }
     const data = await response.json() as { ai: AiPreview };
@@ -229,13 +250,14 @@ function ReportView({ user, onClose }: { user: User | null; onClose: () => void 
       {!photo && <><div className="camera-hint"><Sparkles size={18} /> {cameraMessage}</div><div className="camera-crosshair" /></>}
     </div>
     <div className="camera-actions">
-      {!photo ? <><button className="shutter-button" aria-label="Bëj fotografi" onClick={capturePhoto}><Camera size={24} /></button><label className="gallery-button"><Plus size={20} /><input type="file" accept="image/*" capture="environment" onChange={(event) => { const file = event.target.files?.[0]; if (file) { setPhoto(URL.createObjectURL(file)); requestLocation(); } }} /></label></> : <button className="retake-button" onClick={() => setPhoto(null)}>Bëj përsëri</button>}
+      {!photo ? <><button className="shutter-button" aria-label="Bëj fotografi" onClick={capturePhoto}><Camera size={24} /></button><label className="gallery-button"><Plus size={20} /><input type="file" accept="image/*" capture="environment" onChange={(event) => { const file = event.target.files?.[0]; if (!file) return; const reader = new FileReader(); reader.onload = () => { if (typeof reader.result === "string") { setPhoto(reader.result); requestLocation(); } }; reader.onerror = () => setAnalysisMessage("Fotografia nuk mund të lexohet."); reader.readAsDataURL(file); }} /></label></> : <button className="retake-button" onClick={() => setPhoto(null)}>Bëj përsëri</button>}
     </div>
     <h2>Raporto një problem</h2><p>Fotografo problemin qartë për analizë më të saktë.</p>
     <button className={`location-button ${location ? "ready" : ""}`} onClick={requestLocation}><MapPin size={17} /> {location ? `${location.lat}, ${location.lng}` : "Lejo lokacionin në hartë"}</button>
     <small className="permission-message">{locationMessage}</small>
-    {photo && !analysis && <button className="primary-button submit-report" disabled={!location} onClick={analyzeReport}>Analizo fotografinë</button>}
+    {photo && !analysis && !manualMode && <><label className="category-picker">Zgjidh kategorinë<select value={selectedCategory} onChange={(event) => setSelectedCategory(event.target.value)}>{categories.map((category) => <option value={category} key={category}>{categoryLabels[category]}</option>)}</select></label><button className="primary-button submit-report" disabled={!location} onClick={analyzeReport}>Analizo fotografinë</button><button className="retake-button" disabled={!location} onClick={() => { setManualDraft((draft) => ({ ...draft, category: selectedCategory })); setManualMode(true); }}>Vazhdo pa AI</button></>}
     {analysisMessage && <small className="permission-message">{analysisMessage}</small>}
+    {photo && manualMode && !analysis && <div className="analysis-card"><div className="analysis-header"><strong>Raport manual</strong></div><div className="analysis-edit-form"><label>Titulli<input value={manualDraft.title} onChange={(event) => setManualDraft({ ...manualDraft, title: event.target.value })} /></label><label>Kategoria<select value={manualDraft.category} onChange={(event) => setManualDraft({ ...manualDraft, category: event.target.value })}>{categories.map((category) => <option value={category} key={category}>{category}</option>)}</select></label><label>Përshkrimi<textarea value={manualDraft.description} onChange={(event) => setManualDraft({ ...manualDraft, description: event.target.value })} /></label><button className="primary-button submit-report" onClick={submitReport}>Dërgo raportin</button></div></div>}
     {analysis && <div className="analysis-card"><div className="analysis-header"><Sparkles size={17} /><strong>Raporti i propozuar nga AI</strong></div><p className="ai-warning">AI mund të bëjë gabime. Shiko raportin dhe edito.</p>{editingAnalysis ? <div className="analysis-edit-form"><label>Titulli<input value={analysis.title} onChange={(event) => setAnalysis({ ...analysis, title: event.target.value })} /></label><label>Kategoria<select value={analysis.category} onChange={(event) => setAnalysis({ ...analysis, category: event.target.value })}>{categories.map((category) => <option value={category} key={category}>{category}</option>)}</select></label><label>Përshkrimi<textarea value={analysis.description} onChange={(event) => setAnalysis({ ...analysis, description: event.target.value })} /></label><button className="primary-button submit-report" onClick={() => setEditingAnalysis(false)}>Ruaj ndryshimet</button></div> : <><h3>{analysis.title}</h3><p>{analysis.description}</p><div className="analysis-meta"><span>Kategoria: {analysis.category}</span><span>Rreziku: {analysis.danger_level}/5</span><span>Prioriteti: {analysis.suggested_priority}</span></div><button className="primary-button submit-report" onClick={submitReport}>Dërgo raportin e AI pa ndryshime</button><button className="retake-button" onClick={() => setEditingAnalysis(true)}>Shiko raportin dhe edito</button></>}{editingAnalysis && <button className="retake-button" onClick={submitReport}>Dërgo këtë raport</button>}<button className="retake-button" onClick={() => { setAnalysis(null); setEditingAnalysis(false); }}>Ndrysho fotografinë</button></div>}
   </div>;
 }

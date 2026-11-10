@@ -7,7 +7,8 @@ CityFix is a mobile-first municipal issue reporting platform for the Prishtina a
 - Albanian citizen PWA shell with bottom navigation, report flow, map preview, reports, profile, offline service worker and install manifest.
 - Responsive `/admin` dashboard with KPI cards, urgent incidents, chart and municipality scope.
 - Drizzle/Postgres schema for municipalities, users, incidents, reports, status history, notifications and sensitive places.
-- Zod-validated report API and provider abstraction with Gemini vision integration plus a safe fallback when no key is configured.
+- Zod-validated report API with optional local Qwen3-VL vision analysis through the FastAPI service in `ai-service/`.
+- Citizens choose a problem category before AI analysis; the selection is sent as context and remains editable before submission.
 - Profile registration/login with required personal number, name, surname and neighborhood; email or phone is optional (at least one contact is required).
 - Interactive admin login and incident status controls at `/admin`.
 - OpenFreeMap/MapLibre maps in the citizen app and admin panel, centered on Prishtina with live incident pins.
@@ -25,7 +26,9 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000) or [http://localhost:3000/admin](http://localhost:3000/admin).
 
-Copy `.env.example` to `.env.local` for services. `DATABASE_URL` is required for database-backed incidents. `GEMINI_API_KEY` enables real Gemini image analysis; reports remain submittable with an explicit fallback status when it is absent.
+Copy `.env.example` to `.env.local` for services. `DATABASE_URL` is required for database-backed incidents. Set `AI_ENABLED=true` only while the local FastAPI/Ollama service is running; keep it `false` for Vercel. Reports remain submittable manually when local AI is unavailable.
+
+See [`ai-service/README.md`](./ai-service/README.md) for Windows Python, Ollama and Qwen3-VL setup.
 
 Run `npm run seed` after applying the migrations to create demo data and these test profiles:
 

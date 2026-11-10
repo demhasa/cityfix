@@ -10,6 +10,17 @@ export const aiResultSchema = z.object({
   suggested_priority: z.enum(["urgent", "high", "normal", "low"]),
   confidence: z.number().min(0).max(1),
   is_valid_municipal_issue: z.boolean(),
+  subcategory: z.string().optional(),
+  visual_observations: z.array(z.string()).optional(),
+  severity: z.number().int().min(1).max(5).optional(),
+  image_quality: z.string().optional(),
+  description_matches_image: z.boolean().nullable().optional(),
+  discrepancies: z.array(z.string()).optional(),
+  public_safety_risk: z.string().optional(),
+  recommended_action: z.string().optional(),
+  department: z.string().optional(),
+  requires_human_review: z.boolean().optional(),
+  model_name: z.string().optional(),
 });
 export type AiResult = z.infer<typeof aiResultSchema>;
 

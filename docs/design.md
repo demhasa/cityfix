@@ -11,7 +11,7 @@ flowchart LR
   PWA[CityFix PWA] --> API[Next.js API Routes]
   API --> DB[(Neon Postgres + Drizzle)]
   API --> BLOB[Vercel Blob]
-  API --> AI[AI Provider Gemini/Groq/OpenRouter]
+  API --> AI[Local FastAPI + Ollama Qwen3-VL]
   API --> PUSH[Web Push]
   ADMIN[Paneli i komunës] --> API
 ```
@@ -35,7 +35,7 @@ sequenceDiagram
   participant C as Qytetari
   participant P as PWA
   participant API as API
-  participant AI as AI provider
+  participant AI as Local AI service
   participant DB as Neon
   C->>P: Fotografon problemin
   P->>API: POST /api/reports
@@ -62,5 +62,6 @@ erDiagram
 - Next.js App Router dhe TypeScript: UI dhe API në një repo, me deploy të thjeshtë në Vercel.
 - Neon + Drizzle: PostgreSQL pa server të dedikuar dhe queries të parametrizuara.
 - Zod: çdo payload i API-së validohet para përdorimit.
-- Provider abstraction: mungesa e çelësit ose dështimi i AI-së nuk e bllokon raportin.
+- Local AI is enabled only during local development; Vercel keeps `AI_ENABLED=false` and never calls the personal PC.
+- Dështimi ose mungesa e AI-së nuk e bllokon raportin manual dhe ruhet me statusin `unavailable`.
 - Algoritmet e dublikateve dhe prioritetit janë të ndara në `lib/domain.ts` dhe të testueshme pa databazë.

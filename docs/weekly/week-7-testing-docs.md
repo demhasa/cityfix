@@ -16,4 +16,4 @@
 
 ## External setup still required
 
-GitHub, Vercel, Neon and Gemini account authentication must be completed by the project owner before production deployment.
+Neon and Vercel configuration must be completed by the project owner before production deployment. Local AI additionally requires Ollama and Qwen3-VL on the development PC.

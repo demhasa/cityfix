@@ -2,15 +2,15 @@
 
 ## What I did
 
-- Added Gemini vision integration behind `lib/ai/provider.ts`.
-- Added a fallback result when the API key is missing or Gemini fails, so a citizen can still submit a report.
+- Replaced hosted AI with optional local Qwen3-VL vision analysis behind `lib/ai/provider.ts`.
+- Added a manual report path when local AI is disabled or unavailable.
 - Added Albanian AI output validation with a strict Zod schema.
 - Added report flow screens, an AI analysis hint, install manifest and a cached offline shell.
 - Added a real camera permission request using `getUserMedia`, a rear-camera preference, gallery fallback and compressed JPEG capture.
 - Added a real geolocation permission request, visible latitude/longitude confirmation and a submit button gated on location.
-- The production AI call is enabled by setting `GEMINI_API_KEY` (and optionally `GEMINI_MODEL`) in Vercel; without it, the API explicitly stores `ai_status: "failed"` instead of inventing an analysis.
+- Vercel keeps `AI_ENABLED=false`; local development uses `AI_SERVICE_URL=http://127.0.0.1:8001`.
 - Added visible status and map affordances for the interim demo.
 
 ## Test demo
 
-Submit a valid JSON payload to `POST /api/reports`. Without `GEMINI_API_KEY`, the response is marked `ai_status: "failed"` but remains usable.
+Submit a valid JSON payload to `POST /api/reports`. Without local AI, the response is marked `ai_status: "unavailable"` and remains usable.

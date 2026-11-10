@@ -15,4 +15,4 @@ Pranon një raport të ri. Payload:
 }
 ```
 
-Kthen `201` me incidentin, analizën AI dhe `ai_status`. Payload i pavlefshëm kthen `400`; mungesa e AI-së përdor fallback dhe e shënon raportin `failed`.
+Kthen `201` me incidentin dhe `ai_status`. Kur `AI_ENABLED=true`, analiza vjen nga shërbimi lokal Qwen3-VL; kur AI është e çaktivizuar ose offline, raporti manual ruhet me statusin `unavailable` pa krijuar analizë të rreme.

@@ -1,30 +1,34 @@
 import { aiResultSchema, type AiResult } from "@/lib/domain";
 
-export type AiProvider = { analyzeImage: (image: string, context?: string) => Promise<AiResult> };
-
-const fallback: AiResult = {
-  category: "other", title: "Problem komunal i paidentifikuar",
-  description: "Raporti u pranua, por analiza automatike nuk mundi ta identifikojë problemin. Ekipi komunal do ta shqyrtojë.",
-  danger_level: 1, danger_reason: "Kërkon verifikim nga komuna.", suggested_priority: "normal", confidence: 0, is_valid_municipal_issue: true,
+export type AiProvider = {
+  analyzeImage: (image: string, context?: string) => Promise<AiResult>;
 };
 
+function serviceUrl() {
+  return process.env.AI_SERVICE_URL?.replace(/\/$/, "");
+}
+
+function imageParts(image: string) {
+  const match = image.match(/^data:(image\/(?:jpeg|jpg|png|webp));base64,(.+)$/i);
+  if (!match) throw new Error("Unsupported image data.");
+  return { mimeType: match[1].toLowerCase() === "image/jpg" ? "image/jpeg" : match[1].toLowerCase(), data: Buffer.from(match[2], "base64") };
+}
+
 export function getAiProvider(): AiProvider {
-  return { analyzeImage: async (image, context) => {
-    const key = process.env.GEMINI_API_KEY;
-    if (!key) return fallback;
-    try {
-      const model = process.env.GEMINI_MODEL ?? "gemini-2.5-flash";
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(key)}`, {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: `Analyze this municipal problem image. Return only JSON matching the CityFix issue schema. Language: Albanian. Context: ${context ?? "none"}` }, { inline_data: { mime_type: "image/jpeg", data: image.replace(/^data:image\/\w+;base64,/, "") } }] }],
-          generationConfig: { responseMimeType: "application/json" },
-        }),
-      });
-      if (!response.ok) return fallback;
-      const payload = await response.json() as { candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }> };
-      const text = payload.candidates?.[0]?.content?.parts?.[0]?.text?.replace(/```json|```/g, "").trim();
-      return text ? aiResultSchema.parse(JSON.parse(text)) : fallback;
-    } catch { return fallback; }
-  }};
+  return {
+    analyzeImage: async (image, context) => {
+      if (process.env.AI_ENABLED !== "true") throw new Error("Local AI is disabled.");
+      const url = serviceUrl();
+      if (!url) throw new Error("AI_SERVICE_URL is not configured.");
+      const form = new FormData();
+      const part = imageParts(image);
+      form.append("description", context ?? "");
+      form.append("language", "sq");
+      form.append("photographs", new Blob([part.data], { type: part.mimeType }), "report-image");
+      const headers = process.env.AI_SERVICE_SECRET ? { "x-cityfix-ai-secret": process.env.AI_SERVICE_SECRET } : undefined;
+      const response = await fetch(`${url}/analyze`, { method: "POST", headers, body: form, signal: AbortSignal.timeout(125_000) });
+      if (!response.ok) throw new Error(`Local AI returned ${response.status}.`);
+      return aiResultSchema.parse(await response.json());
+    },
+  };
 }
