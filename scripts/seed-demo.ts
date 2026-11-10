@@ -14,6 +14,18 @@ const municipality = await sql`
 `;
 const municipalityId = municipality[0].id;
 
+for (const team of [
+  ["Ekipi i rrugëve", "Gropa dhe trotuare", "available", "Arben Krasniqi"],
+  ["Ekipi i ndriçimit", "Ndriçim publik", "busy", "Lirije Berisha"],
+  ["Ekipi i pastrimit", "Mbeturina dhe hapësira publike", "available", "Besnik Hoxha"],
+] as const) {
+  await sql`
+    INSERT INTO teams (municipality_id, name, specialty, status, lead_name)
+    VALUES (${municipalityId}, ${team[0]}, ${team[1]}, ${team[2]}, ${team[3]})
+    ON CONFLICT DO NOTHING
+  `;
+}
+
 const demoPassword = await bcrypt.hash("CityFix123!", 10);
 for (const profile of [
   ["1000000001", "demo@cityfix.test", null, "Agim", "Demhasaj", "Dardani", "citizen"],

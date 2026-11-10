@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
 import bcrypt from "bcryptjs";
 import { eq, or } from "drizzle-orm";
 import { z } from "zod";
@@ -54,11 +55,25 @@ export async function POST(request: Request) {
     if (!user || !(await bcrypt.compare(data.password, user.passwordHash))) {
       return NextResponse.json({ error: "Numri personal ose fjalëkalimi është gabim." }, { status: 401 });
     }
+
     const response = NextResponse.json({ user: { id: user.id, name: user.name, surname: user.surname, role: user.role } });
     response.cookies.set("cityfix_user", user.id, { httpOnly: true, sameSite: "lax", maxAge: 60 * 60 * 24 * 7, path: "/" });
     return response;
   } catch (error) {
     console.error("Authentication failed", error);
     return NextResponse.json({ error: "Veprimi nuk mund të përfundojë tani." }, { status: 503 });
+  }
+}
+
+export async function GET() {
+    const userId = (await cookies()).get("cityfix_user")?.value;
+    if (!userId) return NextResponse.json({ user: null });
+    try {
+      const [user] = await getDb().select({ id: users.id, name: users.name, surname: users.surname, role: users.role })
+        .from(users).where(eq(users.id, userId)).limit(1);
+      return NextResponse.json({ user: user ?? null });
+    } catch (error) {
+      console.error("Failed to restore session", error);
+      return NextResponse.json({ error: "Sesioni nuk mund të rikthehet." }, { status: 503 });
   }
 }

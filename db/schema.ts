@@ -81,3 +81,13 @@ export const sensitivePlaces = pgTable("sensitive_places", {
   lng: real("lng").notNull(),
   radiusMeters: integer("radius_meters").default(100).notNull(),
 });
+
+export const teams = pgTable("teams", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  municipalityId: uuid("municipality_id").references(() => municipalities.id).notNull(),
+  name: text("name").notNull(),
+  specialty: text("specialty").notNull(),
+  status: text("status").notNull().default("available"),
+  leadName: text("lead_name").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});

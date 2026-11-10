@@ -16,6 +16,7 @@ import {
   Sparkles,
   ThumbsUp,
 } from "lucide-react";
+import CityMap from "@/components/city-map";
 
 type Incident = {
   id: string;
@@ -26,6 +27,8 @@ type Incident = {
   area: string;
   reports: number;
   time: string;
+  lat: number;
+  lng: number;
 };
 type AiPreview = { title: string; description: string; category: string; danger_level: number; suggested_priority: string };
 type User = { id: string; name: string; surname: string; role: string };
@@ -47,7 +50,14 @@ export default function Home() {
   const [incidents, setIncidents] = useState<Incident[]>([]);
 
   useEffect(() => {
-    void fetch("/api/incidents").then((response) => response.ok ? response.json() as Promise<{ incidents: Incident[] }> : Promise.reject(new Error("incident load failed"))).then((data) => setIncidents(data.incidents)).catch(() => setIncidents([]));
+    const load = () => void fetch("/api/incidents").then((response) => response.ok ? response.json() as Promise<{ incidents: Incident[] }> : Promise.reject(new Error("incident load failed"))).then((data) => setIncidents(data.incidents)).catch(() => setIncidents([]));
+    load();
+    const timer = window.setInterval(load, 15000);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
+    void fetch("/api/auth").then((response) => response.json() as Promise<{ user: User | null }>).then((data) => setUser(data.user)).catch(() => setUser(null));
   }, []);
 
   return (
@@ -87,7 +97,7 @@ function IncidentCard({ incident }: { incident: Incident }) {
   return <article className="incident-card"><div className={`incident-photo photo-${incident.priority}`}><MapPin size={22} /><span>{incident.area}</span></div><div className="incident-info"><div className="card-meta"><span className={`priority-dot ${incident.priority}`} />{incident.category}<time>{incident.time}</time></div><h3>{incident.title}</h3><div className="card-footer"><span className={`status ${incident.status === "Në proces" ? "progress" : ""}`}>{incident.status}</span><button aria-label="Konfirmo raportin"><ThumbsUp size={15} /> {incident.reports}</button></div></div></article>;
 }
 
-function MapView({ incidents }: { incidents: Incident[] }) { return <div className="empty-view"><div className="map-preview"><div className="map-grid" />{incidents.slice(0, 6).map((incident, index) => <span className={`map-pin pin-${(index % 3) + 1}`} key={incident.id} title={incident.title}><MapPin /></span>)}<div className="map-label">{incidents.length} probleme në databazë</div></div><h2>Harta e qytetit</h2><p>Shiko problemet e raportuara rreth teje.</p></div>; }
+function MapView({ incidents }: { incidents: Incident[] }) { return <div className="empty-view"><CityMap incidents={incidents} className="citizen-map" /><h2>Harta e Prishtinës</h2><p>{incidents.length} probleme të sinkronizuara nga databaza.</p></div>; }
 function ReportsView({ user, onAuth }: { user: User | null; onAuth: () => void }) {
   const [reports, setReports] = useState<Array<{ id: string; title: string; category: string; status: string; createdAt: string }>>([]);
   useEffect(() => {
